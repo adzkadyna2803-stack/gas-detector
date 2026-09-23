@@ -6,7 +6,7 @@
 <title>GAS DETECTOR</title>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -83,7 +83,16 @@ body {
     font-size: 12px; font-weight: 700; letter-spacing: 2px;
     color: #888; text-transform: uppercase; margin-bottom: 14px;
 }
-.chart-container { position: relative; height: 200px; }
+.chart-container {
+    position: relative;
+    height: 200px;
+    width: 100%;
+}
+.chart-container canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+}
 .history-list { max-height: 250px; overflow-y: auto; }
 .history-item {
     display: flex; justify-content: space-between; padding: 10px 0;
@@ -294,7 +303,12 @@ function processLine(line) {
             chartData.labels.shift();
             chartData.values.shift();
         }
-        chart.update();
+        
+        if (chart && chart.data) {
+            chart.data.labels = chartData.labels;
+            chart.data.datasets[0].data = chartData.values;
+            chart.update('none');
+        }
 
         const nowTime = Date.now();
         if (nowTime - lastHistoryTime > 10000) {
@@ -352,7 +366,13 @@ function renderHistory() {
 }
 
 function initChart() {
-    const ctx = document.getElementById('chart').getContext('2d');
+    const canvas = document.getElementById('chart');
+    if (!canvas) {
+        console.error('Canvas not found');
+        return false;
+    }
+    
+    const ctx = canvas.getContext('2d');
     chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -361,24 +381,30 @@ function initChart() {
                 data: chartData.values,
                 borderColor: '#00ff88',
                 backgroundColor: 'rgba(0, 255, 136, 0.1)',
-                borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0
+                borderWidth: 2, 
+                fill: true, 
+                tension: 0.4, 
+                pointRadius: 0
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true, 
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
                 y: { beginAtZero: true, max: 100,
                      grid: { color: 'rgba(255,255,255,0.05)' },
                      ticks: { color: '#666', font: { size: 10 }, callback: v => v + '%' } },
-                x: { grid: { display: false }, ticks: { color: '#666', font: { size: 10 } } }
+                x: { grid: { display: false }, 
+                     ticks: { color: '#666', font: { size: 10 } } }
             },
-            animation: { duration: 300 }
+            animation: { duration: 0 }
         }
     });
+    return true;
 }
 
-// ============ RATINGS (LIVE) ============
+// ============ RATINGS ============
 db.ref('gasdetector/ratings').on('value', (snapshot) => {
     const ratings = snapshot.val() || {};
     const list = document.getElementById('ratingList');
@@ -402,7 +428,6 @@ db.ref('gasdetector/ratings').on('value', (snapshot) => {
     }).join('');
 });
 
-// ============ DELETE RATING ============
 function deleteRating(key) {
     if (confirm('Delete this rating?')) {
         db.ref('gasdetector/ratings/' + key).remove();
@@ -415,14 +440,37 @@ function clearAllRatings() {
     }
 }
 
-if (!('serial' in navigator)) {
-    document.getElementById('btnConnect').textContent = 'BROWSER NOT SUPPORTED';
-    document.getElementById('btnConnect').disabled = true;
-    document.getElementById('serialStatus').textContent = 'Use Chrome/Edge!';
+// ============ SAFE INIT ============
+function safeInit() {
+    if (typeof Chart === 'undefined') {
+        console.log('Waiting for Chart.js...');
+        setTimeout(safeInit, 300);
+        return;
+    }
+    
+    const canvas = document.getElementById('chart');
+    if (!canvas) {
+        console.log('Waiting for canvas...');
+        setTimeout(safeInit, 300);
+        return;
+    }
+    
+    const ok = initChart();
+    if (!ok) {
+        setTimeout(safeInit, 300);
+        return;
+    }
+    
+    if (!('serial' in navigator)) {
+        document.getElementById('btnConnect').textContent = 'BROWSER NOT SUPPORTED';
+        document.getElementById('btnConnect').disabled = true;
+        document.getElementById('serialStatus').textContent = 'Use Chrome/Edge!';
+    }
+    
+    console.log('⚡ GAS DETECTOR Ready');
 }
 
-initChart();
-console.log('⚡ GAS DETECTOR Ready');
+window.addEventListener('load', safeInit);
 </script>
 
 </body>
