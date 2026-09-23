@@ -95,7 +95,32 @@ body {
 .history-item .val.safe { background: rgba(0,255,136,0.1); color: #00ff88; }
 .history-item .val.warn { background: rgba(255,204,0,0.1); color: #ffcc00; }
 .history-item .val.danger { background: rgba(255,51,85,0.1); color: #ff3355; }
-.empty { text-align: center; padding: 30px 10px; color: #444; font-size: 12px; font-style: italic; }
+.rating-list { max-height: 300px; overflow-y: auto; }
+.rating-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid #1a1a2a; font-size: 13px;
+}
+.rating-item:last-child { border-bottom: none; }
+.rating-item .name { color: #fff; font-weight: 700; flex: 1; }
+.rating-item .stars-display {
+    color: #ffcc00; font-size: 16px; letter-spacing: 2px; margin-right: 10px;
+}
+.rating-item .delete-btn {
+    background: transparent; border: none; color: #ff3355;
+    cursor: pointer; font-size: 14px; padding: 4px 8px;
+    border-radius: 6px; transition: all 0.2s;
+}
+.rating-item .delete-btn:hover { background: rgba(255,51,85,0.1); }
+.btn-clear {
+    width: 100%; margin-top: 12px; padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,51,85,0.3);
+    background: rgba(255,51,85,0.1);
+    color: #ff3355; font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; cursor: pointer;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+.btn-clear:active { transform: scale(0.97); }
 .team-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 10px; margin-top: 10px;
@@ -121,6 +146,7 @@ body {
 .team-role.poster { background: rgba(255,51,85,0.1); color: #ff3355; border: 1px solid rgba(255,51,85,0.3); }
 .team-role.module { background: rgba(168,85,247,0.1); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); }
 .footer { text-align: center; font-size: 10px; color: #333; letter-spacing: 2px; padding: 20px 0 10px; }
+.empty { text-align: center; padding: 30px 10px; color: #444; font-size: 12px; font-style: italic; }
 </style>
 </head>
 <body>
@@ -149,6 +175,11 @@ body {
             <h3>🕐 History</h3>
             <div class="history-list" id="historyList"><div class="empty">No data yet</div></div>
         </div>
+    </div>
+    <div class="card">
+        <h3>⭐ Ratings</h3>
+        <div class="rating-list" id="ratingList"><div class="empty">No ratings yet</div></div>
+        <button class="btn-clear" onclick="clearAllRatings()">🗑️ CLEAR ALL RATINGS</button>
     </div>
     <div class="card">
         <h3>👥 Team Members</h3>
@@ -345,6 +376,43 @@ function initChart() {
             animation: { duration: 300 }
         }
     });
+}
+
+// ============ RATINGS (LIVE) ============
+db.ref('gasdetector/ratings').on('value', (snapshot) => {
+    const ratings = snapshot.val() || {};
+    const list = document.getElementById('ratingList');
+    
+    const sorted = Object.entries(ratings).sort((a, b) => b[1].time - a[1].time);
+    
+    if (sorted.length === 0) {
+        list.innerHTML = '<div class="empty">No ratings yet</div>';
+        return;
+    }
+    
+    list.innerHTML = sorted.map(([key, r]) => {
+        const stars = '★'.repeat(r.stars) + '☆'.repeat(5 - r.stars);
+        return `
+            <div class="rating-item">
+                <span class="name">${r.name}</span>
+                <span class="stars-display">${stars}</span>
+                <button class="delete-btn" onclick="deleteRating('${key}')">🗑️</button>
+            </div>
+        `;
+    }).join('');
+});
+
+// ============ DELETE RATING ============
+function deleteRating(key) {
+    if (confirm('Delete this rating?')) {
+        db.ref('gasdetector/ratings/' + key).remove();
+    }
+}
+
+function clearAllRatings() {
+    if (confirm('Delete ALL ratings?')) {
+        db.ref('gasdetector/ratings').remove();
+    }
 }
 
 if (!('serial' in navigator)) {
