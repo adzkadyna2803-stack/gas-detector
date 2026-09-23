@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAS DETECTOR</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0a0a12;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 12px;
+    background-image: radial-gradient(ellipse at top, #0a2a1a 0%, #0a0a12 70%);
+}
+.container { max-width: 900px; margin: 0 auto; }
+.header { text-align: center; padding: 20px 0 24px; }
+.header .logo {
+    font-size: 30px; font-weight: 900; letter-spacing: 3px;
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header .sub { font-size: 9px; color: #666; letter-spacing: 4px; margin-top: 4px; }
+.serial-bar {
+    background: rgba(15,15,25,0.9); border: 1px solid #2a2a3a;
+    border-radius: 14px; padding: 12px 16px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.serial-bar .info { flex: 1; font-size: 11px; color: #888; }
+.serial-bar .info strong { color: #fff; }
+.btn-serial {
+    padding: 10px 18px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    color: #000; font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: 'Segoe UI', Arial, sans-serif;
+    letter-spacing: 1px;
+}
+.btn-serial:active { transform: scale(0.97); }
+.btn-serial.connected { background: linear-gradient(135deg, #ff3355, #cc0033); color: #fff; }
+.main-card {
+    background: rgba(15,15,25,0.9); border: 1px solid #2a2a3a;
+    border-radius: 20px; padding: 24px; margin-bottom: 14px; text-align: center;
+}
+.level-label { font-size: 11px; color: #666; letter-spacing: 3px; text-transform: uppercase; }
+.level-value {
+    font-size: 80px; font-weight: 900; letter-spacing: -3px;
+    margin: 8px 0; transition: color 0.3s;
+}
+.level-value.safe { color: #00ff88; text-shadow: 0 0 30px rgba(0,255,136,0.5); }
+.level-value.warn { color: #ffcc00; text-shadow: 0 0 30px rgba(255,204,0,0.5); }
+.level-value.danger { color: #ff3355; text-shadow: 0 0 30px rgba(255,51,85,0.5); }
+.level-max { font-size: 28px; color: #444; }
+.progress-track {
+    width: 100%; height: 20px; background: rgba(255,255,255,0.05);
+    border-radius: 12px; overflow: hidden; margin: 16px 0 10px;
+}
+.progress-fill {
+    height: 100%; width: 0%; border-radius: 12px; transition: all 0.5s;
+    background: linear-gradient(90deg, #00ff88, #00cc66);
+}
+.progress-fill.warn { background: linear-gradient(90deg, #ffcc00, #ff9900); }
+.progress-fill.danger { background: linear-gradient(90deg, #ff3355, #cc0033); }
+.status-text {
+    font-size: 14px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; margin-top: 10px;
+}
+.status-text.safe { color: #00ff88; }
+.status-text.warn { color: #ffcc00; }
+.status-text.danger { color: #ff3355; }
+.grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;
+}
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+.card {
+    background: rgba(15,15,25,0.9); border: 1px solid #2a2a3a;
+    border-radius: 16px; padding: 18px; margin-bottom: 14px;
+}
+.card h3 {
+    font-size: 12px; font-weight: 700; letter-spacing: 2px;
+    color: #888; text-transform: uppercase; margin-bottom: 14px;
+}
+.chart-container { position: relative; height: 200px; }
+.history-list { max-height: 250px; overflow-y: auto; }
+.history-item {
+    display: flex; justify-content: space-between; padding: 10px 0;
+    border-bottom: 1px solid #1a1a2a; font-size: 12px;
+}
+.history-item:last-child { border-bottom: none; }
+.history-item .time { color: #666; font-size: 11px; font-family: monospace; }
+.history-item .val { font-weight: 700; padding: 3px 10px; border-radius: 10px; font-size: 11px; }
+.history-item .val.safe { background: rgba(0,255,136,0.1); color: #00ff88; }
+.history-item .val.warn { background: rgba(255,204,0,0.1); color: #ffcc00; }
+.history-item .val.danger { background: rgba(255,51,85,0.1); color: #ff3355; }
+.empty { text-align: center; padding: 30px 10px; color: #444; font-size: 12px; font-style: italic; }
+.team-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px; margin-top: 10px;
+}
+.team-item {
+    background: rgba(255,255,255,0.03); border: 1px solid #2a2a3a;
+    border-radius: 12px; padding: 12px 8px; text-align: center;
+    transition: all 0.2s;
+}
+.team-item:hover {
+    border-color: #00ff88; background: rgba(0,255,136,0.05);
+    transform: translateY(-2px);
+}
+.team-name { font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 5px; letter-spacing: 1px; }
+.team-role {
+    display: inline-block; font-size: 8px; font-weight: 700;
+    padding: 3px 8px; border-radius: 10px; letter-spacing: 1px;
+}
+.team-role.coding { background: rgba(0,212,255,0.1); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); }
+.team-role.assembly { background: rgba(255,204,0,0.1); color: #ffcc00; border: 1px solid rgba(255,204,0,0.3); }
+.team-role.documentation { background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+.team-role.ppt { background: rgba(255,107,53,0.1); color: #ff6b35; border: 1px solid rgba(255,107,53,0.3); }
+.team-role.poster { background: rgba(255,51,85,0.1); color: #ff3355; border: 1px solid rgba(255,51,85,0.3); }
+.team-role.module { background: rgba(168,85,247,0.1); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); }
+.footer { text-align: center; font-size: 10px; color: #333; letter-spacing: 2px; padding: 20px 0 10px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">⚡ GAS DETECTOR</div>
+        <div class="sub">SMART GAS MONITORING SYSTEM</div>
+    </div>
+    <div class="serial-bar">
+        <div class="info">🔌 Status: <strong id="serialStatus">Not connected</strong></div>
+        <button class="btn-serial" id="btnConnect" onclick="connectSerial()">CONNECT ARDUINO</button>
+    </div>
+    <div class="main-card">
+        <div class="level-label">GAS LEVEL</div>
+        <div class="level-value safe" id="levelValue">0<span class="level-max">%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="status-text safe" id="statusLevel">SAFE</div>
+    </div>
+    <div class="grid">
+        <div class="card">
+            <h3>📊 Real-Time Chart</h3>
+            <div class="chart-container"><canvas id="chart"></canvas></div>
+        </div>
+        <div class="card">
+            <h3>🕐 History</h3>
+            <div class="history-list" id="historyList"><div class="empty">No data yet</div></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>👥 Team Members</h3>
+        <div class="team-grid">
+            <div class="team-item"><div class="team-name">AQIL</div><div class="team-role coding">CODING</div></div>
+            <div class="team-item"><div class="team-name">AFFAN</div><div class="team-role coding">CODING</div></div>
+            <div class="team-item"><div class="team-name">ANDRA</div><div class="team-role assembly">ASSEMBLY</div></div>
+            <div class="team-item"><div class="team-name">ALFATH</div><div class="team-role assembly">ASSEMBLY</div></div>
+            <div class="team-item"><div class="team-name">ANDARA</div><div class="team-role documentation">DOCUMENTATION</div></div>
+            <div class="team-item"><div class="team-name">ADZKA</div><div class="team-role ppt">PPT</div></div>
+            <div class="team-item"><div class="team-name">RAEFA</div><div class="team-role ppt">PPT</div></div>
+            <div class="team-item"><div class="team-name">NINDY</div><div class="team-role poster">POSTER</div></div>
+            <div class="team-item"><div class="team-name">QUENA</div><div class="team-role poster">POSTER</div></div>
+            <div class="team-item"><div class="team-name">FARREN</div><div class="team-role poster">POSTER</div></div>
+            <div class="team-item"><div class="team-name">CINSCA</div><div class="team-role module">MODULE</div></div>
+        </div>
+    </div>
+    <div class="footer">GAS DETECTOR v1.0 • Arduino + Web Serial + Firebase</div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAVOkvCQq2gmAWsz6J1GmLx9CnLvG3dIW4",
+    authDomain: "smokeguard-6c599.firebaseapp.com",
+    databaseURL: "https://smokeguard-6c599-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "smokeguard-6c599",
+    storageBucket: "smokeguard-6c599.firebasestorage.app",
+    messagingSenderId: "826742340637",
+    appId: "1:826742340637:web:5ff3da64aa9d38667adaf4"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let chart;
+let chartData = { labels: [], values: [] };
+let history = [];
+let lastHistoryTime = 0;
+
+let port, reader;
+let serialConnected = false;
+let buffer = '';
+
+async function connectSerial() {
+    if (serialConnected) {
+        try {
+            if (reader) await reader.cancel();
+            if (port) await port.close();
+        } catch(e) {}
+        serialConnected = false;
+        document.getElementById('serialStatus').textContent = 'Disconnected';
+        document.getElementById('btnConnect').textContent = 'CONNECT ARDUINO';
+        document.getElementById('btnConnect').className = 'btn-serial';
+        return;
+    }
+
+    try {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 9600 });
+        serialConnected = true;
+        document.getElementById('serialStatus').textContent = 'Connected ✅';
+        document.getElementById('btnConnect').textContent = 'DISCONNECT';
+        document.getElementById('btnConnect').className = 'btn-serial connected';
+        readSerial();
+    } catch(e) {
+        alert('Connection failed: ' + e.message);
+    }
+}
+
+async function readSerial() {
+    const textDecoder = new TextDecoderStream();
+    port.readable.pipeTo(textDecoder.writable);
+    reader = textDecoder.readable.getReader();
+
+    while (true) {
+        try {
+            const { value, done } = await reader.read();
+            if (done) break;
+            if (value) {
+                buffer += value;
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                lines.forEach(line => processLine(line.trim()));
+            }
+        } catch(e) { break; }
+    }
+}
+
+function processLine(line) {
+    if (!line) return;
+    console.log('Arduino:', line);
+
+    if (line.startsWith('DATA:')) {
+        const nilai = parseFloat(line.replace('DATA:', ''));
+        if (isNaN(nilai)) return;
+
+        const level = Math.min(Math.max(nilai, 0), 100);
+        updateUI(level);
+
+        db.ref('gasdetector').update({
+            level: level,
+            last_update: Date.now()
+        });
+
+        const now = new Date();
+        const time = String(now.getHours()).padStart(2,'0') + ':' +
+                     String(now.getMinutes()).padStart(2,'0') + ':' +
+                     String(now.getSeconds()).padStart(2,'0');
+        chartData.labels.push(time);
+        chartData.values.push(level);
+        if (chartData.labels.length > 30) {
+            chartData.labels.shift();
+            chartData.values.shift();
+        }
+        chart.update();
+
+        const nowTime = Date.now();
+        if (nowTime - lastHistoryTime > 10000) {
+            let status = 'safe';
+            if (level > 80) status = 'danger';
+            else if (level > 50) status = 'warn';
+            addHistory(level, status);
+            lastHistoryTime = nowTime;
+        }
+    }
+}
+
+function updateUI(level) {
+    const lv = document.getElementById('levelValue');
+    lv.innerHTML = Math.round(level) + '<span class="level-max">%</span>';
+    const pf = document.getElementById('progressFill');
+    pf.style.width = level + '%';
+    lv.className = 'level-value';
+    pf.className = 'progress-fill';
+    const st = document.getElementById('statusLevel');
+    st.className = 'status-text';
+
+    let status = 'SAFE', cls = 'safe';
+    if (level > 80) { cls = 'danger'; status = 'DANGER'; }
+    else if (level > 50) { cls = 'warn'; status = 'WARNING'; }
+
+    lv.classList.add(cls);
+    pf.classList.add(cls);
+    st.classList.add(cls);
+    st.textContent = status;
+}
+
+function addHistory(level, status) {
+    const now = new Date();
+    const time = String(now.getHours()).padStart(2,'0') + ':' +
+                 String(now.getMinutes()).padStart(2,'0') + ':' +
+                 String(now.getSeconds()).padStart(2,'0');
+    history.unshift({ time, level, status });
+    if (history.length > 30) history.pop();
+    renderHistory();
+}
+
+function renderHistory() {
+    const list = document.getElementById('historyList');
+    if (history.length === 0) {
+        list.innerHTML = '<div class="empty">No data yet</div>';
+        return;
+    }
+    list.innerHTML = history.map(h => `
+        <div class="history-item">
+            <span class="time">${h.time}</span>
+            <span class="val ${h.status}">${Math.round(h.level)}% - ${h.status.toUpperCase()}</span>
+        </div>
+    `).join('');
+}
+
+function initChart() {
+    const ctx = document.getElementById('chart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                data: chartData.values,
+                borderColor: '#00ff88',
+                backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, max: 100,
+                     grid: { color: 'rgba(255,255,255,0.05)' },
+                     ticks: { color: '#666', font: { size: 10 }, callback: v => v + '%' } },
+                x: { grid: { display: false }, ticks: { color: '#666', font: { size: 10 } } }
+            },
+            animation: { duration: 300 }
+        }
+    });
+}
+
+if (!('serial' in navigator)) {
+    document.getElementById('btnConnect').textContent = 'BROWSER NOT SUPPORTED';
+    document.getElementById('btnConnect').disabled = true;
+    document.getElementById('serialStatus').textContent = 'Use Chrome/Edge!';
+}
+
+initChart();
+console.log('⚡ GAS DETECTOR Ready');
+</script>
+
+</body>
+</html>
