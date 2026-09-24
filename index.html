@@ -21,13 +21,8 @@ body {
 
 .header { text-align: center; padding: 20px 0 24px; }
 .header .school-logo {
-    width: 200px;
-    height: auto;
-    margin: 0 auto 16px;
-    display: block;
-    background: #fff;
-    padding: 12px;
-    border-radius: 16px;
+    width: 200px; height: auto; margin: 0 auto 16px; display: block;
+    background: #fff; padding: 12px; border-radius: 16px;
     box-shadow: 0 0 30px rgba(255,255,255,0.1);
 }
 .header .logo {
@@ -44,15 +39,17 @@ body {
 }
 .serial-bar .info { flex: 1; font-size: 11px; color: #888; }
 .serial-bar .info strong { color: #fff; }
-.btn-serial {
+.btn-serial, .btn-notif {
     padding: 10px 18px; border-radius: 10px; border: none;
     background: linear-gradient(135deg, #00ff88, #00cc66);
     color: #000; font-size: 12px; font-weight: 700;
     cursor: pointer; font-family: 'Segoe UI', Arial, sans-serif;
     letter-spacing: 1px;
 }
-.btn-serial:active { transform: scale(0.97); }
+.btn-notif { background: linear-gradient(135deg, #ffcc00, #ff9900); }
+.btn-serial:active, .btn-notif:active { transform: scale(0.97); }
 .btn-serial.connected { background: linear-gradient(135deg, #ff3355, #cc0033); color: #fff; }
+.btn-notif.active { background: linear-gradient(135deg, #34d399, #059669); color: #fff; }
 
 .main-card {
     background: rgba(15,15,25,0.9); border: 1px solid #2a2a3a;
@@ -98,16 +95,8 @@ body {
     font-size: 12px; font-weight: 700; letter-spacing: 2px;
     color: #888; text-transform: uppercase; margin-bottom: 14px;
 }
-.chart-container {
-    position: relative;
-    height: 200px;
-    width: 100%;
-}
-.chart-container canvas {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-}
+.chart-container { position: relative; height: 200px; width: 100%; }
+.chart-container canvas { display: block !important; width: 100% !important; height: 100% !important; }
 
 .history-list { max-height: 250px; overflow-y: auto; }
 .history-item {
@@ -121,32 +110,37 @@ body {
 .history-item .val.warn { background: rgba(255,204,0,0.1); color: #ffcc00; }
 .history-item .val.danger { background: rgba(255,51,85,0.1); color: #ff3355; }
 
-/* QR CODE */
-.qr-section {
-    text-align: center;
-    padding: 20px;
+/* NOTIFICATION LOG */
+.notif-list { max-height: 300px; overflow-y: auto; }
+.notif-item {
+    display: flex; align-items: center; gap: 10px; padding: 12px 0;
+    border-bottom: 1px solid #1a1a2a; font-size: 12px;
 }
+.notif-item:last-child { border-bottom: none; }
+.notif-item .notif-icon {
+    width: 32px; height: 32px; min-width: 32px;
+    border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-size: 14px;
+}
+.notif-item .notif-icon.danger { background: rgba(255,51,85,0.1); color: #ff3355; }
+.notif-item .notif-icon.warn { background: rgba(255,204,0,0.1); color: #ffcc00; }
+.notif-item .notif-icon.safe { background: rgba(0,255,136,0.1); color: #00ff88; }
+.notif-item .notif-content { flex: 1; }
+.notif-item .notif-title { color: #fff; font-weight: 700; font-size: 12px; }
+.notif-item .notif-time { color: #666; font-size: 10px; font-family: monospace; margin-top: 2px; }
+
+.qr-section { text-align: center; padding: 20px; }
 .qr-section h3 {
     font-size: 16px; font-weight: 700; letter-spacing: 2px;
     color: #fff; text-transform: uppercase; margin-bottom: 16px;
 }
 .qr-section img {
-    width: 250px;
-    height: 250px;
-    object-fit: contain;
-    background: #fff;
-    padding: 16px;
-    border-radius: 16px;
+    width: 250px; height: 250px; object-fit: contain;
+    background: #fff; padding: 16px; border-radius: 16px;
     box-shadow: 0 0 30px rgba(255,255,255,0.1);
-    display: block;
-    margin: 0 auto;
+    display: block; margin: 0 auto;
 }
-.qr-section p {
-    font-size: 11px;
-    color: #888;
-    margin-top: 12px;
-    letter-spacing: 1px;
-}
+.qr-section p { font-size: 11px; color: #888; margin-top: 12px; letter-spacing: 1px; }
 
 .team-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -155,11 +149,6 @@ body {
 .team-item {
     background: rgba(255,255,255,0.03); border: 1px solid #2a2a3a;
     border-radius: 12px; padding: 12px 8px; text-align: center;
-    transition: all 0.2s;
-}
-.team-item:hover {
-    border-color: #00ff88; background: rgba(0,255,136,0.05);
-    transform: translateY(-2px);
 }
 .team-name { font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 5px; letter-spacing: 1px; }
 .team-role {
@@ -175,6 +164,49 @@ body {
 
 .footer { text-align: center; font-size: 10px; color: #333; letter-spacing: 2px; padding: 20px 0 10px; }
 .empty { text-align: center; padding: 30px 10px; color: #444; font-size: 12px; font-style: italic; }
+
+/* TOAST NOTIFICATION */
+.toast-notif {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(20,15,30,0.98);
+    border: 2px solid #ff3355;
+    border-radius: 14px;
+    padding: 16px 20px;
+    min-width: 320px;
+    z-index: 9999;
+    box-shadow: 0 0 40px rgba(255,51,85,0.6);
+    animation: slideIn 0.4s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+@keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+.toast-notif .toast-icon {
+    font-size: 28px;
+    animation: shake 0.5s infinite;
+}
+@keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-15deg); }
+    75% { transform: rotate(15deg); }
+}
+.toast-notif .toast-text { flex: 1; }
+.toast-notif .toast-title {
+    color: #ff3355;
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+.toast-notif .toast-desc {
+    color: #ccc;
+    font-size: 11px;
+    margin-top: 3px;
+}
 </style>
 </head>
 <body>
@@ -189,6 +221,7 @@ body {
     <div class="serial-bar">
         <div class="info">🔌 Status: <strong id="serialStatus">Not connected</strong></div>
         <button class="btn-serial" id="btnConnect" onclick="connectSerial()">CONNECT ARDUINO</button>
+        <button class="btn-notif" id="btnNotif" onclick="requestNotifPermission()">🔔 ENABLE NOTIFICATION</button>
     </div>
 
     <div class="main-card">
@@ -207,6 +240,12 @@ body {
             <h3>🕐 History</h3>
             <div class="history-list" id="historyList"><div class="empty">No data yet</div></div>
         </div>
+    </div>
+
+    <!-- NOTIFICATION LOG -->
+    <div class="card">
+        <h3>🔔 Notifications</h3>
+        <div class="notif-list" id="notifList"><div class="empty">No notifications yet</div></div>
     </div>
 
     <!-- QR CODE VOTING -->
@@ -257,10 +296,103 @@ let chartData = { labels: [], values: [] };
 let history = [];
 let lastHistoryTime = 0;
 
+let notifHistory = [];
+let lastNotifTime = 0;
+let notifEnabled = false;
+let lastLevel = 0;
+let lastStatus = 'safe';
+
 let port, reader;
 let serialConnected = false;
 let buffer = '';
 
+// ============ NOTIFICATION PERMISSION ============
+function requestNotifPermission() {
+    if (!('Notification' in window)) {
+        alert('Browser tidak support notifikasi!');
+        return;
+    }
+    
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            notifEnabled = true;
+            document.getElementById('btnNotif').textContent = '🔔 NOTIFICATION: ON';
+            document.getElementById('btnNotif').classList.add('active');
+            showToastNotif('✅', 'NOTIFICATION ENABLED', 'Notifikasi gas aktif');
+        } else {
+            notifEnabled = false;
+            document.getElementById('btnNotif').textContent = '🔕 NOTIFICATION: OFF';
+            alert('Notifikasi ditolak!');
+        }
+    });
+}
+
+// ============ SEND NOTIFICATION ============
+function sendNotification(title, body, icon) {
+    // Browser notification
+    if (notifEnabled && Notification.permission === 'granted') {
+        new Notification(title, {
+            body: body,
+            icon: 'https://files.catbox.moe/s6gzc2.png',
+            badge: 'https://files.catbox.moe/s6gzc2.png',
+            vibrate: [200, 100, 200, 100, 200],
+            tag: 'gas-alert',
+            requireInteraction: true
+        });
+    }
+    
+    // Toast notification
+    showToastNotif(icon, title, body);
+    
+    // Add to log
+    const now = new Date();
+    const time = String(now.getHours()).padStart(2,'0') + ':' +
+                 String(now.getMinutes()).padStart(2,'0') + ':' +
+                 String(now.getSeconds()).padStart(2,'0');
+    
+    notifHistory.unshift({ time, title, body, icon });
+    if (notifHistory.length > 30) notifHistory.pop();
+    renderNotifLog();
+}
+
+function showToastNotif(icon, title, desc) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notif';
+    toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-text">
+            <div class="toast-title">${title}</div>
+            <div class="toast-desc">${desc}</div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s, transform 0.3s';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(400px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+function renderNotifLog() {
+    const list = document.getElementById('notifList');
+    if (notifHistory.length === 0) {
+        list.innerHTML = '<div class="empty">No notifications yet</div>';
+        return;
+    }
+    list.innerHTML = notifHistory.map(n => `
+        <div class="notif-item">
+            <div class="notif-icon danger">${n.icon}</div>
+            <div class="notif-content">
+                <div class="notif-title">${n.title}</div>
+                <div class="notif-time">${n.time} • ${n.body}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ============ SERIAL CONNECTION ============
 async function connectSerial() {
     if (serialConnected) {
         try {
@@ -346,6 +478,36 @@ function processLine(line) {
             else if (level > 50) status = 'warn';
             addHistory(level, status);
             lastHistoryTime = nowTime;
+        }
+        
+        // ============ DETEKSI PERUBAHAN STATUS ============
+        let currentStatus = 'safe';
+        if (level > 80) currentStatus = 'danger';
+        else if (level > 50) currentStatus = 'warn';
+        
+        // Notif kalo status berubah
+        if (currentStatus !== lastStatus) {
+            if (currentStatus === 'danger') {
+                sendNotification(
+                    '🚨 GAS DANGER DETECTED!',
+                    `Level gas: ${Math.round(level)}% - Segera cek!`,
+                    '🚨'
+                );
+            } else if (currentStatus === 'warn') {
+                sendNotification(
+                    '⚠️ GAS WARNING',
+                    `Level gas: ${Math.round(level)}% - Waspada!`,
+                    '⚠️'
+                );
+            } else if (currentStatus === 'safe' && lastStatus === 'danger') {
+                sendNotification(
+                    '✅ GAS SAFE',
+                    `Level gas: ${Math.round(level)}% - Kondisi aman`,
+                    '✅'
+                );
+            }
+            
+            lastStatus = currentStatus;
         }
     }
 }
@@ -452,6 +614,13 @@ function safeInit() {
         document.getElementById('btnConnect').textContent = 'BROWSER NOT SUPPORTED';
         document.getElementById('btnConnect').disabled = true;
         document.getElementById('serialStatus').textContent = 'Use Chrome/Edge!';
+    }
+    
+    // Cek notif permission
+    if ('Notification' in window && Notification.permission === 'granted') {
+        notifEnabled = true;
+        document.getElementById('btnNotif').textContent = '🔔 NOTIFICATION: ON';
+        document.getElementById('btnNotif').classList.add('active');
     }
     
     console.log('⚡ GAS DETECTOR Ready');
